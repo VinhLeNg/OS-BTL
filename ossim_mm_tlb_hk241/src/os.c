@@ -110,7 +110,7 @@ static void * ld_routine(void * args) {
 	struct memphy_struct* active_mswp = ((struct mmpaging_ld_args *)args)->active_mswp;
 	struct timer_id_t * timer_id = ((struct mmpaging_ld_args *)args)->timer_id;
 #ifdef CPU_TLB
-	struct memphy_struct* tlb = ((struct mmpaging_ld_args *)args)->tlb; // Thêm TLB
+	struct memphy_struct *tlb = ((struct mmpaging_ld_args *)args)->tlb; // Add TLB
 #endif
 #else
 	struct timer_id_t * timer_id = (struct timer_id_t*)args;
@@ -132,7 +132,7 @@ static void * ld_routine(void * args) {
 		proc->mswp = mswp;
 		proc->active_mswp = active_mswp;
 #ifdef CPU_TLB
-		proc->tlb = tlb; // Thêm tlb
+		proc->tlb = tlb; // Add TLB
 #endif
 #endif
 		printf("\tLoaded a process at %s, PID: %d PRIO: %ld\n",
