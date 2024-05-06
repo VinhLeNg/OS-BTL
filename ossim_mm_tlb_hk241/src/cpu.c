@@ -9,6 +9,7 @@ int calc(struct pcb_t * proc) {
 
 int alloc(struct pcb_t * proc, uint32_t size, uint32_t reg_index) {
 	// hoho alloc
+	// commit lan 2 ne
 	addr_t addr = alloc_mem(size, proc);
 	if (addr == 0) {
 		return 1;
