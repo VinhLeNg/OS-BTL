@@ -31,6 +31,7 @@ int tlb_change_all_page_tables_of(struct pcb_t *proc,  struct memphy_struct * mp
   for (int i = 0; i < TLB_SIZE; i += TLB_ENTRY_SIZE)
   {
     // Trích xuất pid, pgnum, và data từ tlb_entry hiện tại
+    // Extract pid, pgnum, and data from the current tlb_entry
       int used = mp->storage[i];
       if ((used&1) == 0) continue;
       int entry_pid = 0;
