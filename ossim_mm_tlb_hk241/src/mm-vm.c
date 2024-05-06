@@ -230,6 +230,7 @@ int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
     
     #ifdef CPU_TLB
     /* Update its online status of TLB (if needed) */
+       tlb_change_all_page_tables_of(caller, caller->mram);
     #endif
     
     /* Keep tracking */
