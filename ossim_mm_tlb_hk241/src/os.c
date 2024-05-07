@@ -59,9 +59,9 @@ static void * cpu_routine(void * args) {
 			/* No process is running, the we load new process from
 		 	* ready queue */
 			proc = get_proc();
-			if (proc == NULL) {
+			if (proc == NULL) {			
                            next_slot(timer_id);
-                           continue; /* First load failed. skip dummy load */
+                           continue; /* First load failed. skip dummy load */			
                         }
 		}else if (proc->pc == proc->code->size) {
 			/* The porcess has finish it job */
