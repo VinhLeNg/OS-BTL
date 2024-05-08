@@ -97,6 +97,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
   /*Allocate at the toproof */
   struct vm_rg_struct rgnode;
 
+  // free has enough to put new size in
   if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
   {
     caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
@@ -106,6 +107,7 @@ int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr
 
     return 0;
   }
+  // here return -1 tell that in free not have enough space, require mmore data in vm
 
   /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
 
