@@ -45,10 +45,10 @@ int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, int* value)
 {
    /* TODO: the identify info is mapped to 
     *      cache line by employing:
-    *      direct mapped, associated mapping etc.
+    *      associated mapping etc.
     */
    pthread_mutex_lock(&cache_lock);
-   /* Iterate over all tlb_entry in mp->storage */
+   /* Iterate over all tlb_entry in mp->storage, cause we are using fully associative */
    for(int i = 0; i < TLB_SIZE * TLB_ENTRY_SIZE; i += TLB_ENTRY_SIZE)
    {
       // Extracting pid, pgnum, data from current tlb_entry
@@ -88,10 +88,11 @@ int tlb_cache_write(struct memphy_struct *mp, int pid, int pgnum, int *value)
 {
    /* TODO: the identify info is mapped to 
     *      cache line by employing:
-    *      direct mapped, associated mapping etc.
+    *      associated mapping etc.
     */
    pthread_mutex_lock(&cache_lock);
    int free_entry = -1;
+   /* Iterate over all tlb_entry in mp->storage, cause we are using fully associative */
    for(int i = 0; i < TLB_SIZE * TLB_ENTRY_SIZE; i += TLB_ENTRY_SIZE)
    {
       int flag = 0;
@@ -179,6 +180,8 @@ int TLBMEMPHY_dump(struct memphy_struct * mp)
    /*TODO dump memphy contnt mp->storage 
     *     for tracing the memory content
     */
+   printf("TLBMEMPHY_dump\n");
+   printf("TLB Cache Start\n");
    // Check whether the physical memory exists or not
    if(mp == NULL || mp->storage == NULL)
    {
@@ -199,12 +202,13 @@ int TLBMEMPHY_dump(struct memphy_struct * mp)
       {
          entry_pid |= (mp->storage[i + 4 - j] << (j * 8));
       }
-      //int entry_pgnum = (mp->storage[i + 5] << 8) | mp->storage[i + 6];
-      //int entry_data = (mp->storage[i + 7] << 8) | mp->storage[i + 8]; // Frame number
-      //printf("Entry %d:\tUsed: %d\tEntry pid: %d\tEntry pagenum: %d\tEntry framenum: %d\n", i/TLB_ENTRY_SIZE, used, entry_pid, entry_pgnum, entry_data);
+      int entry_pgnum = (mp->storage[i + 5] << 8) | mp->storage[i + 6];
+      int entry_data = (mp->storage[i + 7] << 8) | mp->storage[i + 8]; // Frame number
+      printf("Entry %d:\tUsed: %d\tEntry pid: %d\tEntry pagenum: %d\tEntry framenum: %d\n", i/TLB_ENTRY_SIZE, used, entry_pid, entry_pgnum, entry_data);
    }
    
    pthread_mutex_unlock(&cache_lock);
+   printf("TLB Cache End\n");
    return 0;
 }
 
