@@ -22,63 +22,109 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
     if (rg_elmt.rg_start >= rg_elmt.rg_end)
         return -1;
 
+    // Point last node, when rg_node is NULL
+    struct vm_rg_struct *lastNode;
+    while (rg_node)
+    {
+        lastNode = rg_node;
+        rg_node = rg_node->rg_next;
+    }
+
+    // Reassgn to head of freelist
+    rg_node = mm->mmap->vm_freerg_list;
+
+    // Init
+    if (rg_node == NULL)
+    {
+        struct vm_rg_struct *newnode = malloc(sizeof(struct vm_rg_struct));
+        newnode->rg_start = rg_elmt.rg_start;
+        newnode->rg_end = rg_elmt.rg_end;
+        newnode->rg_next = NULL;
+        mm->mmap->vm_freerg_list = newnode;
+        return 0;
+        // Init no need merge, since the number of free is 0 -> 1
+    }
+    else if (rg_elmt.rg_end <= rg_node->rg_start)
+    {
+        // Add far before first node
+        if (rg_elmt.rg_end == rg_node->rg_start)
+        {
+            rg_node->rg_start = rg_elmt.rg_start;
+            return 0;
+        }
+
+        struct vm_rg_struct *newnode = malloc(sizeof(struct vm_rg_struct));
+        newnode->rg_start = rg_elmt.rg_start;
+        newnode->rg_end = rg_elmt.rg_end;
+        newnode->rg_next = rg_node;
+        mm->mmap->vm_freerg_list = newnode;
+        return 0;
+        // No merge needed, thus exist a gap btw new node and first node
+    }
+    else if (rg_elmt.rg_start > lastNode->rg_end)
+    {
+        if (rg_elmt.rg_start == lastNode->rg_end)
+        {
+            lastNode->rg_end = rg_elmt.rg_end;
+            return 0;
+        }
+
+        // Add far after last node
+        struct vm_rg_struct *newnode = malloc(sizeof(struct vm_rg_struct));
+        newnode->rg_start = rg_elmt.rg_start;
+        newnode->rg_end = rg_elmt.rg_end;
+        newnode->rg_next = NULL;
+        lastNode->rg_next = newnode;
+        return 0;
+        // No merge needed, thus exist a gap btw last node and new node
+    }
+
     while (rg_node)
     {
         struct vm_rg_struct *next_node = rg_node->rg_next;
-        if (next_node == NULL)
+        /* Come up with 4 cases:
+         * Perfect fit (Remove node require)
+         * node->end < elmt_start && elmt_end < next_node->start (between two nodes) (new node require)
+         * node->end = elmt->start (to the left of current node)
+         * elmt->end = next_node->start (to the right of current node)
+         */
+
+        if (rg_node->rg_end == rg_elmt.rg_start && rg_elmt.rg_end == next_node->rg_start)
         {
-            /*
-             * Very final node
-             * Come up with 2 cases:
-             * node->end = elmt->start
-             * elmt node is so far with the last node
+            /* Special case that the used that fit exactly to the gap
+             * Therefore we need to merge the gap to 1 node
              */
-            if (rg_node->rg_end == rg_elmt.rg_start)
-            {
-                rg_node->rg_end = rg_elmt.rg_end;
-            }
-            else
-            {
-                struct vm_rg_struct *newnode = malloc(sizeof(struct vm_rg_struct));
-                newnode->rg_start = rg_elmt.rg_start;
-                newnode->rg_end = rg_elmt.rg_end;
-                newnode->rg_next = NULL;
-                rg_node->rg_next = newnode;
-                return 0;
-            }
+            rg_node->rg_end = next_node->rg_end;
+            rg_node->rg_next = next_node->rg_next;
+
+            // Free the node
+            next_node->rg_end = next_node->rg_next = 0;
+            next_node->rg_next = NULL;
+            free(next_node);
         }
-        else
+        else if (rg_node->rg_end < rg_elmt.rg_start && rg_elmt.rg_end < next_node->rg_start)
         {
-            /* Stay between two nodes
-             * Come up with 3 cases:
-             * node->end = elmt->start (to the left of current node)
-             * node->end < elmt_start && elmt_end < next_node->start (between two nodes)
-             * elmt->end = next_node->start (to the right of current node)
-             */
-            if (rg_node->rg_end == rg_elmt.rg_start)
-            {
-                rg_node->rg_end = rg_elmt.rg_end; // Extend right
-                return 0;
-            }
-            else if (rg_node->rg_end < rg_elmt.rg_start && rg_elmt.rg_end < next_node->rg_start)
-            {
-                struct vm_rg_struct *newnode = malloc(sizeof(struct vm_rg_struct));
+            struct vm_rg_struct *newnode = malloc(sizeof(struct vm_rg_struct));
 
-                // Copy data to new node and link to next node
-                newnode->rg_start = rg_elmt.rg_start;
-                newnode->rg_end = rg_elmt.rg_end;
-                newnode->rg_next = next_node;
+            // Copy data to new node and link to next node
+            newnode->rg_start = rg_elmt.rg_start;
+            newnode->rg_end = rg_elmt.rg_end;
+            newnode->rg_next = next_node;
 
-                // Add node btw gap
-                rg_node->rg_next = newnode;
+            // Add node btw gap
+            rg_node->rg_next = newnode;
 
-                return 0;
-            }
-            else if (rg_elmt.rg_end == next_node->rg_start)
-            {
-                next_node->rg_start = rg_elmt.rg_start; // Extend left
-                return 0;
-            }
+            return 0;
+        }
+        else if (rg_node->rg_end == rg_elmt.rg_start)
+        {
+            rg_node->rg_end = rg_elmt.rg_end; // Extend right
+            return 0;
+        }
+        else if (rg_elmt.rg_end == next_node->rg_start)
+        {
+            next_node->rg_start = rg_elmt.rg_start; // Extend left
+            return 0;
         }
         rg_node = next_node;
     }
