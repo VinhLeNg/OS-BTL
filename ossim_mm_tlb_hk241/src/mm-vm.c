@@ -22,15 +22,7 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
     if (rg_elmt.rg_start >= rg_elmt.rg_end)
         return -1;
 
-    // Point last node, when rg_node is NULL
-    struct vm_rg_struct *lastNode;
-    while (rg_node)
-    {
-        lastNode = rg_node;
-        rg_node = rg_node->rg_next;
-    }
-
-    // Reassgn to head of freelist
+    // Reassign to head of freelist
     rg_node = mm->mmap->vm_freerg_list;
 
     // Init
@@ -61,44 +53,44 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
         return 0;
         // No merge needed, thus exist a gap btw new node and first node
     }
-    else if (rg_elmt.rg_start > lastNode->rg_end)
-    {
-        if (rg_elmt.rg_start == lastNode->rg_end)
-        {
-            lastNode->rg_end = rg_elmt.rg_end;
-            return 0;
-        }
-
-        // Add far after last node
-        struct vm_rg_struct *newnode = malloc(sizeof(struct vm_rg_struct));
-        newnode->rg_start = rg_elmt.rg_start;
-        newnode->rg_end = rg_elmt.rg_end;
-        newnode->rg_next = NULL;
-        lastNode->rg_next = newnode;
-        return 0;
-        // No merge needed, thus exist a gap btw last node and new node
-    }
 
     while (rg_node)
     {
-        struct vm_rg_struct *next_node = rg_node->rg_next;
-        /* Come up with 4 cases:
+        /* Special case when reach the end
+        Come up with 4 cases: (Btw 2 nodes)
          * Perfect fit (Remove node require)
          * node->end < elmt_start && elmt_end < next_node->start (between two nodes) (new node require)
          * node->end = elmt->start (to the left of current node)
          * elmt->end = next_node->start (to the right of current node)
          */
-
-        if (rg_node->rg_end == rg_elmt.rg_start && rg_elmt.rg_end == next_node->rg_start)
+        struct vm_rg_struct *next_node = rg_node->rg_next;
+        if (next_node == NULL)
         {
-            /* Special case that the used that fit exactly to the gap
-             * Therefore we need to merge the gap to 1 node
-             */
+            if (rg_elmt.rg_start == rg_node->rg_end)
+            {
+                rg_node->rg_end = rg_elmt.rg_end;
+                return 0;
+            }
+
+            // Add far after last node
+            struct vm_rg_struct *newnode = malloc(sizeof(struct vm_rg_struct));
+            newnode->rg_start = rg_elmt.rg_start;
+            newnode->rg_end = rg_elmt.rg_end;
+            newnode->rg_next = NULL;
+            rg_node->rg_next = newnode;
+            return 0;
+            // No merge needed, thus exist a gap btw last node and new node
+        }
+        else if (rg_node->rg_end == rg_elmt.rg_start && rg_elmt.rg_end == next_node->rg_start)
+        {
+            // Special case that the used that fit exactly to the gap
+            // Therefore we need to merge the gap to 1 node
+
             rg_node->rg_end = next_node->rg_end;
             rg_node->rg_next = next_node->rg_next;
 
             // Free the node
-            next_node->rg_end = next_node->rg_next = 0;
+            next_node->rg_end = next_node->rg_start = 0;
             next_node->rg_next = NULL;
             free(next_node);
         }
@@ -128,6 +120,9 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
         }
         rg_node = next_node;
     }
+
+    printf("eheheheheheheh\n");
+    fflush(stdout);
 
     return 0;
 }
@@ -565,8 +560,7 @@ int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
     /* The obtained vm area (only)
      * now will be alloc real ram region */
     cur_vma->vm_end += inc_sz;
-    if (vm_map_ram(caller, area->rg_start, area->rg_end,
-                   old_end, incnumpage, newrg) < 0)
+    if (vm_map_ram(caller, area->rg_start, area->rg_end, old_end, incnumpage, newrg) < 0)
         return -1; /* Map the memory to MEMRAM */
 
     return 0;
