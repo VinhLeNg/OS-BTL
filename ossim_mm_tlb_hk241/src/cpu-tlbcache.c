@@ -27,6 +27,13 @@
 
 pthread_mutex_t cache_lock;
 
+// need 1 bit for detect the entry is used or not: 0 = Not used, 1 = Used
+// 32 bit (unsigned int) = 4 bytes for pid
+// need 14 bit for pgnum -> 2 bytes
+// frame number has 13 bit = 2 byte
+// -/----/--/--  => 1 entry hết 9 byte
+// pid/pgnum/frame number
+
 /*
  *  tlb_cache_read read TLB cache device
  *  @mp: memphy struct
@@ -42,7 +49,7 @@ int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, int* value)
     */
    pthread_mutex_lock(&cache_lock);
    /* Iterate over all tlb_entry in mp->storage */
-   for(int i = 0; i < mp->maxsz; i += TLB_ENTRY_SIZE)
+   for(int i = 0; i < TLB_SIZE * TLB_ENTRY_SIZE; i += TLB_ENTRY_SIZE)
    {
       // Extracting pid, pgnum, data from current tlb_entry
       int used = mp->storage[i];
@@ -77,7 +84,7 @@ int tlb_cache_read(struct memphy_struct * mp, int pid, int pgnum, int* value)
  *  @pgnum: page number
  *  @value: obtained value
  */
-int tlb_cache_write(struct memphy_struct *mp, int pid, int pgnum, int* value)
+int tlb_cache_write(struct memphy_struct *mp, int pid, int pgnum, int *value)
 {
    /* TODO: the identify info is mapped to 
     *      cache line by employing:
@@ -85,9 +92,18 @@ int tlb_cache_write(struct memphy_struct *mp, int pid, int pgnum, int* value)
     */
    pthread_mutex_lock(&cache_lock);
    int free_entry = -1;
-   for(int i = 0; i < mp->maxsz; i += TLB_ENTRY_SIZE)
+   for(int i = 0; i < TLB_SIZE * TLB_ENTRY_SIZE; i += TLB_ENTRY_SIZE)
    {
-      if((mp->storage[i] & 1) == 0)
+      int flag = 0;
+      for(int j = 0; j <= 8; j++)
+      {
+         if(mp->storage[i + j] != 0)
+         {
+            flag = 1;
+            break;
+         }
+      }
+      if(flag == 0)
       {
          free_entry = i / TLB_ENTRY_SIZE;
          break;
@@ -172,7 +188,7 @@ int TLBMEMPHY_dump(struct memphy_struct * mp)
    
    pthread_mutex_lock(&cache_lock);
    /* Iterate over all tlb_entry in mp->storage */
-   for(int i = 0; i < mp->maxsz; i += TLB_ENTRY_SIZE)
+   for(int i = 0; i < TLB_SIZE * TLB_ENTRY_SIZE; i += TLB_ENTRY_SIZE)
    {
       // Extracting pid, pgnum, data from current tlb_entry
       int used = mp->storage[i];
