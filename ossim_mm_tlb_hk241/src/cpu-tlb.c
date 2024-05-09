@@ -78,6 +78,7 @@ int tlb_flush_tlb_of(struct pcb_t *proc, struct memphy_struct * mp)
 int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 {
   int addr, val;
+  printf("TLB_alloc, proc: %d\n", proc->pid);
 
   /* By default using vmaid = 0 */
   val = __alloc(proc, 0, reg_index, size, &addr);
@@ -111,6 +112,7 @@ int tlballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
 int tlbfree_data(struct pcb_t *proc, uint32_t reg_index)
 {
   pthread_mutex_lock(&cache_lock);
+  printf("TLB_free, proc: %d\n", proc->pid);
   __free(proc, 0, reg_index);
 
   /* TODO update TLB CACHED frame num of freed page(s)*/
@@ -156,6 +158,7 @@ int tlbread(struct pcb_t * proc, uint32_t source,
 {
   BYTE data;
   int frmnum = -1;
+  printf("TLB_read, proc: %d\n", proc->pid);
 	
   /* TODO retrieve TLB CACHED frame num of accessing page(s)*/
   /* by using tlb_cache_read()/tlb_cache_write()*/
@@ -202,6 +205,7 @@ int tlbwrite(struct pcb_t * proc, BYTE data,
 {
   int val;
   int frmnum = -1;
+  printf("TLB_write, proc: %d\n", proc->pid);
 
   /* TODO retrieve TLB CACHED frame num of accessing page(s))*/
   /* by using tlb_cache_read()/tlb_cache_write()
