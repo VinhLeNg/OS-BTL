@@ -14,7 +14,7 @@
  *@rg_elmt: new region
  *
  */
-// input the mm and reagion to be remove in mm
+// input the mm and region to be remove in mm
 int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
 {
     struct vm_rg_struct *rg_node = mm->mmap->vm_freerg_list;
