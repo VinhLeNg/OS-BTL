@@ -121,7 +121,6 @@ int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct rg_elmt)
         rg_node = next_node;
     }
 
-    printf("eheheheheheheh\n");
     fflush(stdout);
 
     return 0;
